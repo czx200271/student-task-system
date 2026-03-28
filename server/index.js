@@ -1,8 +1,12 @@
-// 加载环境变量
+// 加载环境变量（必须放在最前面）
 require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
+const connectDB = require('./config/db');
+
+// 连接数据库
+connectDB();
 
 // 创建 Express 应用
 const app = express();
@@ -14,7 +18,7 @@ const PORT = process.env.PORT || 4000;
 app.use(cors());           // 允许跨域请求
 app.use(express.json());   // 解析 JSON 请求体
 
-// 健康检查接口 - 用于验证服务器是否正常运行
+// 健康检查接口
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
