@@ -1,62 +1,141 @@
-import { useState } from 'react';
-
-// 假数据 - Week 6 会改成从后端获取
-const initialTasks = [
-  {
-    _id: '1',
-    title: 'Complete React tutorial',
-    description: 'Finish the official React documentation',
-    dueDate: '2026-03-15',
-    priority: 'high',
-    status: 'todo'
-  },
-  {
-    _id: '2',
-    title: 'Setup MongoDB Atlas',
-    description: 'Create a free cluster and get connection string',
-    dueDate: '2026-03-10',
-    priority: 'high',
-    status: 'done'
-  },
-  {
-    _id: '3',
-    title: 'Write project report',
-    description: 'Weekly progress report for Week 2',
-    dueDate: '2026-03-08',
-    priority: 'medium',
-    status: 'todo'
-  },
-  {
-    _id: '4',
-    title: 'Review JavaScript basics',
-    description: 'Review ES6 features',
-    dueDate: '2026-03-20',
-    priority: 'low',
-    status: 'todo'
-  }
-];
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { apiFetch, getToken } from '../utils/api';
 
 // 判断是否逾期
 function isOverdue(dueDate, status) {
   if (status === 'done') return false;
+  if (!dueDate) return false;
   return new Date(dueDate) < new Date();
 }
 
-function Tasks() {
-  const [tasks, setTasks] = useState(initialTasks);
-  const [filter, setFilter] = useState('all'); // all, todo, done
+function formatDateInputValue(date) {
+  if (!date) return '';
+  const d = new Date(date);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toISOString().slice(0, 10);
+}
 
-  // 切换任务状态
-  const toggleStatus = (id) => {
-    setTasks(tasks.map(task => {
-      if (task._id === id) {
-        return {
-          ...task,
-          status: task.status === 'todo' ? 'done' : 'todo'
-        };
+function formatDueDateDisplay(date) {
+  const v = formatDateInputValue(date);
+  return v || 'N/A';
+}
+
+function Tasks() {
+  const [token, setToken] = useState(() => getToken());
+  const [tasks, setTasks] = useState([]);
+  const [filter, setFilter] = useState('all'); // all, todo, done
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const [modalMode, setModalMode] = useState(null); // 'create' | 'edit' | null
+  const [editingTask, setEditingTask] = useState(null); // task object (edit only)
+  const [editForm, setEditForm] = useState({
+    title: '',
+    description: '',
+    dueDate: '',
+    priority: 'medium'
+  });
+
+  const loadTasks = async () => {
+    if (!token) return;
+    setError('');
+    setLoading(true);
+    try {
+      const data = await apiFetch('/api/tasks', { token });
+      setTasks(data.tasks || []);
+    } catch (err) {
+      setError(err.message || '加载任务失败');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const onAuth = () => setToken(getToken());
+    window.addEventListener('app:auth-changed', onAuth);
+    return () => window.removeEventListener('app:auth-changed', onAuth);
+  }, []);
+
+  useEffect(() => {
+    loadTasks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
+
+  const toggleStatus = async (task) => {
+    try {
+      const data = await apiFetch(`/api/tasks/${task._id}/status`, {
+        method: 'PATCH',
+        token
+      });
+      setTasks((prev) => prev.map((t) => (t._id === task._id ? data.task : t)));
+    } catch (err) {
+      alert(err.message || '状态更新失败');
+    }
+  };
+
+  const openCreate = () => {
+    setModalMode('create');
+    setEditingTask(null);
+    setEditForm({
+      title: '',
+      description: '',
+      dueDate: '',
+      priority: 'medium'
+    });
+  };
+
+  const openEdit = (task) => {
+    setModalMode('edit');
+    setEditingTask(task);
+    setEditForm({
+      title: task.title || '',
+      description: task.description || '',
+      dueDate: formatDateInputValue(task.dueDate),
+      priority: task.priority || 'medium'
+    });
+  };
+
+  const closeModal = () => {
+    setModalMode(null);
+    setEditingTask(null);
+  };
+
+  const saveTaskModal = async (e) => {
+    e.preventDefault();
+    if (!modalMode) return;
+    try {
+      const payload = {
+        title: editForm.title,
+        description: editForm.description,
+        dueDate: editForm.dueDate ? new Date(editForm.dueDate).toISOString() : null,
+        priority: editForm.priority
+      };
+
+      if (modalMode === 'create') {
+        const data = await apiFetch('/api/tasks', {
+          method: 'POST',
+          token,
+          body: payload
+        });
+        setTasks((prev) => [data.task, ...prev]);
+        closeModal();
+        return;
       }
-      return task;
-    }));
+
+      if (modalMode === 'edit' && editingTask) {
+        const data = await apiFetch(`/api/tasks/${editingTask._id}`, {
+          method: 'PUT',
+          token,
+          body: payload
+        });
+
+        setTasks((prev) => prev.map((t) => (t._id === editingTask._id ? data.task : t)));
+        closeModal();
+      }
+    } catch (err) {
+      alert(err.message || '保存失败');
+    }
   };
 
   // 筛选任务
@@ -65,9 +144,35 @@ function Tasks() {
     return task.status === filter;
   });
 
+  if (!token) {
+    return (
+      <div className="page-container">
+        <h1>My Tasks</h1>
+        <p>
+          你还没有登录。请先 <Link to="/login">登录</Link>，再查看和编辑任务。
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="page-container">
       <h1>My Tasks</h1>
+
+      <div className="tasks-toolbar">
+        <div className="tasks-toolbar-left">
+          <button type="button" className="btn" onClick={openCreate}>
+            New Task
+          </button>
+        </div>
+        <div className="tasks-toolbar-right">
+          <button type="button" className="btn btn-secondary" onClick={loadTasks} disabled={loading}>
+            {loading ? 'Loading...' : 'Refresh'}
+          </button>
+        </div>
+      </div>
+
+      {error && <div className="alert error">{error}</div>}
       
       {/* 筛选按钮 */}
       <div className="filter-buttons">
@@ -93,6 +198,7 @@ function Tasks() {
 
       {/* 任务列表 */}
       <div className="task-list">
+        {tasks.length === 0 && <p className="empty-hint">你还没有任何任务。点击 “New Task” 创建任务后，就会看到每条任务右下角的 “Edit”。</p>}
         {filteredTasks.map(task => (
           <div 
             key={task._id} 
@@ -105,19 +211,92 @@ function Tasks() {
             <p className="task-description">{task.description}</p>
             <div className="task-footer">
               <span className="due-date">
-                Due: {task.dueDate}
+                Due: {formatDueDateDisplay(task.dueDate)}
                 {isOverdue(task.dueDate, task.status) && <span className="overdue-tag"> (Overdue!)</span>}
               </span>
-              <button 
-                className={`status-btn ${task.status}`}
-                onClick={() => toggleStatus(task._id)}
-              >
-                {task.status === 'todo' ? '✓ Mark Done' : '↩ Undo'}
-              </button>
+              <div className="task-actions">
+                <button type="button" className="action-btn" onClick={() => openEdit(task)}>
+                  Edit
+                </button>
+                <button 
+                  type="button"
+                  className={`status-btn ${task.status}`}
+                  onClick={() => toggleStatus(task)}
+                >
+                  {task.status === 'todo' ? '✓ Mark Done' : '↩ Undo'}
+                </button>
+              </div>
             </div>
           </div>
         ))}
       </div>
+
+      {/* Create / Edit Modal */}
+      {modalMode && (
+        <div className="modal-backdrop" role="presentation" onClick={closeModal}>
+          <div className="modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>{modalMode === 'create' ? 'New Task' : 'Edit Task'}</h2>
+              <button type="button" className="modal-close" onClick={closeModal}>
+                ×
+              </button>
+            </div>
+
+            <form className="modal-body" onSubmit={saveTaskModal}>
+              <div className="form-group">
+                <label>Title</label>
+                <input
+                  type="text"
+                  value={editForm.title}
+                  onChange={(e) => setEditForm((p) => ({ ...p, title: e.target.value }))}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Description</label>
+                <input
+                  type="text"
+                  value={editForm.description}
+                  onChange={(e) => setEditForm((p) => ({ ...p, description: e.target.value }))}
+                />
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Due Date</label>
+                  <input
+                    type="date"
+                    value={editForm.dueDate}
+                    onChange={(e) => setEditForm((p) => ({ ...p, dueDate: e.target.value }))}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Priority</label>
+                  <select
+                    value={editForm.priority}
+                    onChange={(e) => setEditForm((p) => ({ ...p, priority: e.target.value }))}
+                  >
+                    <option value="low">low</option>
+                    <option value="medium">medium</option>
+                    <option value="high">high</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={closeModal}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn">
+                  Save
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

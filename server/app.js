@@ -1,0 +1,100 @@
+const express = require('express');
+const cors = require('cors');
+
+// 创建 Express 应用
+const app = express();
+
+// 中间件
+app.use(cors());
+app.use(express.json());
+
+// 健康检查接口
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    message: 'Server is running!',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// 路由
+const authRoutes = require('./routes/auth');
+app.use('/api/auth', authRoutes);
+const taskRoutes = require('./routes/tasks');
+app.use('/api/tasks', taskRoutes);
+
+// ========== 测试接口（Week 3 演示用，仅开发环境）==========
+if (process.env.NODE_ENV !== 'production') {
+  const User = require('./models/User');
+  const Task = require('./models/Task');
+
+  app.get('/api/test/create-user', async (req, res) => {
+    try {
+      const testUser = new User({
+        name: 'Test Student',
+        email: 'test@example.com',
+        passwordHash: 'fake-hash-123'
+      });
+      const savedUser = await testUser.save();
+      res.json({
+        message: 'User created successfully!',
+        user: savedUser
+      });
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.get('/api/test/users', async (req, res) => {
+    try {
+      const users = await User.find();
+      res.json({
+        message: `Found ${users.length} users`,
+        users
+      });
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.get('/api/test/create-task', async (req, res) => {
+    try {
+      const user = await User.findOne();
+      if (!user) {
+        return res.status(400).json({ error: 'Please create a user first: /api/test/create-user' });
+      }
+
+      const testTask = new Task({
+        userId: user._id,
+        title: 'Complete Week 3 Report',
+        description: 'Write progress report for the professor',
+        dueDate: new Date('2026-03-30'),
+        priority: 'high',
+        status: 'todo'
+      });
+      const savedTask = await testTask.save();
+      res.json({
+        message: 'Task created successfully!',
+        task: savedTask
+      });
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.get('/api/test/tasks', async (req, res) => {
+    try {
+      const tasks = await Task.find();
+      res.json({
+        message: `Found ${tasks.length} tasks`,
+        tasks
+      });
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+}
+// ========== 测试接口结束 ==========
+
+module.exports = app;
+

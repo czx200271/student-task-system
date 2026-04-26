@@ -1,21 +1,39 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { apiFetch } from '../utils/api';
 
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Week 6 才接入后端，现在只是打印
-    console.log('Login:', { email, password });
-    alert('登录功能将在 Week 6 实现！');
+    setError('');
+    setLoading(true);
+    try {
+      const data = await apiFetch('/api/auth/login', {
+        method: 'POST',
+        body: { email, password }
+      });
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      window.dispatchEvent(new Event('app:auth-changed'));
+      navigate('/tasks');
+    } catch (err) {
+      setError(err.message || '登录失败');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="page-container">
       <h1>Login</h1>
       <form onSubmit={handleSubmit} className="form">
+        {error && <div className="alert error">{error}</div>}
         <div className="form-group">
           <label>Email</label>
           <input
@@ -36,7 +54,9 @@ function Login() {
             required
           />
         </div>
-        <button type="submit" className="btn">Login</button>
+        <button type="submit" className="btn" disabled={loading}>
+          {loading ? 'Logging in...' : 'Login'}
+        </button>
       </form>
       <p className="form-footer">
         Don't have an account? <Link to="/register">Register here</Link>

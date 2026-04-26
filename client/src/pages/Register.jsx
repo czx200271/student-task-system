@@ -1,22 +1,40 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { apiFetch } from '../utils/api';
 
 function Register() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Week 6 才接入后端，现在只是打印
-    console.log('Register:', { name, email, password });
-    alert('注册功能将在 Week 6 实现！');
+    setError('');
+    setLoading(true);
+    try {
+      const data = await apiFetch('/api/auth/register', {
+        method: 'POST',
+        body: { name, email, password }
+      });
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      window.dispatchEvent(new Event('app:auth-changed'));
+      navigate('/tasks');
+    } catch (err) {
+      setError(err.message || '注册失败');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="page-container">
       <h1>Register</h1>
       <form onSubmit={handleSubmit} className="form">
+        {error && <div className="alert error">{error}</div>}
         <div className="form-group">
           <label>Name</label>
           <input
@@ -47,7 +65,9 @@ function Register() {
             required
           />
         </div>
-        <button type="submit" className="btn">Register</button>
+        <button type="submit" className="btn" disabled={loading}>
+          {loading ? 'Creating...' : 'Register'}
+        </button>
       </form>
       <p className="form-footer">
         Already have an account? <Link to="/login">Login here</Link>
