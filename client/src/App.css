@@ -1,4 +1,4 @@
-/* App 布局 */
+/* App layout */
 .app {
   min-height: 100vh;
   display: flex;
@@ -13,7 +13,7 @@
   width: 100%;
 }
 
-/* 导航栏 */
+/* Navigation bar */
 .navbar {
   background: #2c3e50;
   color: white;
@@ -47,7 +47,7 @@
   background: #3498db;
 }
 
-/* 页面容器 */
+/* Page container */
 .page-container {
   background: white;
   padding: 30px;
@@ -60,7 +60,7 @@
   color: #2c3e50;
 }
 
-/* 表单样式 */
+/* Form styles */
 .form {
   max-width: 400px;
 }
@@ -153,7 +153,7 @@
   color: #3498db;
 }
 
-/* Dashboard 统计卡片 */
+/* Dashboard stat cards */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -184,7 +184,7 @@
 .stat-number.pending { color: #f39c12; }
 .stat-number.overdue { color: #e74c3c; }
 
-/* 筛选按钮 */
+/* Filter buttons */
 .filter-buttons {
   display: flex;
   gap: 10px;
@@ -207,7 +207,7 @@
   border-color: #3498db;
 }
 
-/* 任务列表 */
+/* Task list */
 .task-list {
   display: flex;
   flex-direction: column;
@@ -337,6 +337,11 @@
 .action-btn:hover {
   border-color: #3498db;
   color: #3498db;
+}
+
+.action-btn.action-danger:hover {
+  border-color: #e74c3c;
+  color: #e74c3c;
 }
 
 /* Modal */

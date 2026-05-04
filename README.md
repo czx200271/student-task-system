@@ -1,24 +1,24 @@
 # Student Task Management System
 
-一个帮助学生管理任务的 Web 应用。
+A web application that helps students manage their tasks.
 
-## 技术栈
+## Tech Stack
 
-- **前端**: React + Vite + React Router
-- **后端**: Node.js + Express
-- **数据库**: MongoDB Atlas
+- **Frontend**: React + Vite + React Router
+- **Backend**: Node.js + Express
+- **Database**: MongoDB Atlas
 
-## 项目结构
+## Project Structure
 
 ```
 /student-task-system
-  /client   - React 前端
-  /server   - Express 后端
+  /client   - React frontend
+  /server   - Express backend
 ```
 
-## 快速启动
+## Quick Start
 
-### 1. 启动后端
+### 1. Start Backend
 
 ```bash
 cd server
@@ -26,9 +26,9 @@ npm install
 npm run dev
 ```
 
-后端运行在 http://localhost:4000
+Backend runs at http://localhost:4000
 
-### 2. 启动前端
+### 2. Start Frontend
 
 ```bash
 cd client
@@ -36,8 +36,8 @@ npm install
 npm run dev
 ```
 
-前端运行在 http://localhost:5173
+Frontend runs at http://localhost:5173
 
-## API 测试
+## API Test
 
-访问 http://localhost:4000/api/health 检查后端是否正常运行。
+Visit http://localhost:4000/api/health to check whether backend is running correctly.

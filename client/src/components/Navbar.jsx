@@ -12,7 +12,7 @@ function Navbar() {
     return () => window.removeEventListener('app:auth-changed', onAuth);
   }, []);
   
-  // 判断当前路径是否激活
+  // Check whether current path is active
   const isActive = (path) => location.pathname === path;
 
   const logout = () => {

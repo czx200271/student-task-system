@@ -1,14 +1,14 @@
 const express = require('express');
 const cors = require('cors');
 
-// 创建 Express 应用
+// Create Express app
 const app = express();
 
-// 中间件
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-// 健康检查接口
+// Health-check endpoint
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
@@ -17,13 +17,13 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// 路由
+// Routes
 const authRoutes = require('./routes/auth');
 app.use('/api/auth', authRoutes);
 const taskRoutes = require('./routes/tasks');
 app.use('/api/tasks', taskRoutes);
 
-// ========== 测试接口（Week 3 演示用，仅开发环境）==========
+// ========== Test endpoints (Week 3 demo, development only) ==========
 if (process.env.NODE_ENV !== 'production') {
   const User = require('./models/User');
   const Task = require('./models/Task');
@@ -94,7 +94,7 @@ if (process.env.NODE_ENV !== 'production') {
     }
   });
 }
-// ========== 测试接口结束 ==========
+// ========== End test endpoints ==========
 
 module.exports = app;
 

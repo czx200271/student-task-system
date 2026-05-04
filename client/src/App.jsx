@@ -12,7 +12,7 @@ function App() {
       <Navbar />
       <main className="main-content">
         <Routes>
-          {/* 默认跳转到 Dashboard */}
+          {/* Default redirect to Dashboard */}
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />

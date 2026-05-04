@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiFetch, getToken } from '../utils/api';
 
-// 判断是否逾期
+// Check whether a task is overdue
 function isOverdue(dueDate, status) {
   if (status === 'done') return false;
   if (!dueDate) return false;
@@ -45,7 +45,7 @@ function Tasks() {
       const data = await apiFetch('/api/tasks', { token });
       setTasks(data.tasks || []);
     } catch (err) {
-      setError(err.message || '加载任务失败');
+      setError(err.message || 'Failed to load tasks');
     } finally {
       setLoading(false);
     }
@@ -70,7 +70,22 @@ function Tasks() {
       });
       setTasks((prev) => prev.map((t) => (t._id === task._id ? data.task : t)));
     } catch (err) {
-      alert(err.message || '状态更新失败');
+      alert(err.message || 'Failed to update status');
+    }
+  };
+
+  const deleteTask = async (task) => {
+    const ok = window.confirm(`Delete task "${task.title}"?`);
+    if (!ok) return;
+
+    try {
+      await apiFetch(`/api/tasks/${task._id}`, {
+        method: 'DELETE',
+        token
+      });
+      setTasks((prev) => prev.filter((t) => t._id !== task._id));
+    } catch (err) {
+      alert(err.message || 'Failed to delete task');
     }
   };
 
@@ -134,11 +149,11 @@ function Tasks() {
         closeModal();
       }
     } catch (err) {
-      alert(err.message || '保存失败');
+      alert(err.message || 'Failed to save task');
     }
   };
 
-  // 筛选任务
+  // Filter tasks
   const filteredTasks = tasks.filter(task => {
     if (filter === 'all') return true;
     return task.status === filter;
@@ -149,7 +164,7 @@ function Tasks() {
       <div className="page-container">
         <h1>My Tasks</h1>
         <p>
-          你还没有登录。请先 <Link to="/login">登录</Link>，再查看和编辑任务。
+          You are not logged in yet. Please <Link to="/login">log in</Link> to view and edit tasks.
         </p>
       </div>
     );
@@ -174,7 +189,7 @@ function Tasks() {
 
       {error && <div className="alert error">{error}</div>}
       
-      {/* 筛选按钮 */}
+      {/* Filter buttons */}
       <div className="filter-buttons">
         <button 
           className={filter === 'all' ? 'active' : ''} 
@@ -196,9 +211,16 @@ function Tasks() {
         </button>
       </div>
 
-      {/* 任务列表 */}
+      {/* Task list */}
       <div className="task-list">
-        {tasks.length === 0 && <p className="empty-hint">你还没有任何任务。点击 “New Task” 创建任务后，就会看到每条任务右下角的 “Edit”。</p>}
+        {tasks.length === 0 && (
+          <p className="empty-hint">
+            You do not have any tasks yet. Click "New Task" to create one, then you will see "Edit / Delete / Mark Done" on each task card.
+          </p>
+        )}
+        {tasks.length > 0 && filteredTasks.length === 0 && (
+          <p className="empty-hint">No tasks match the current filter. Try switching to All / Pending / Completed.</p>
+        )}
         {filteredTasks.map(task => (
           <div 
             key={task._id} 
@@ -217,6 +239,9 @@ function Tasks() {
               <div className="task-actions">
                 <button type="button" className="action-btn" onClick={() => openEdit(task)}>
                   Edit
+                </button>
+                <button type="button" className="action-btn action-danger" onClick={() => deleteTask(task)}>
+                  Delete
                 </button>
                 <button 
                   type="button"

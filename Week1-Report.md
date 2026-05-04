@@ -2,7 +2,7 @@
 
 **Project:** Student Task Management System  
 **Date:** March 9, 2026  
-**Student:** [你的名字]
+**Student:** [Your Name]
 
 ---
 
@@ -90,7 +90,7 @@ All Week 1 tasks were completed as planned. The project skeleton is now ready wi
 
 ## Screenshots
 
-[在这里插入截图]
+[Insert screenshots here]
 
 1. Frontend running (http://localhost:5173)
 2. Backend health check response (http://localhost:4000/api/health)

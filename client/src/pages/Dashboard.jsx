@@ -1,4 +1,4 @@
-// 假数据 - Week 8 会改成从后端获取
+// Mock data - will be fetched from backend in Week 8
 const mockStats = {
   total: 8,
   completed: 3,

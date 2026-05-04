@@ -40,7 +40,7 @@ const taskSchema = new mongoose.Schema({
   }
 });
 
-// 每次更新时自动更新 updatedAt
+// Auto-update updatedAt on every save
 taskSchema.pre('save', function() {
   this.updatedAt = Date.now();
 });

@@ -24,7 +24,7 @@ function Register() {
       window.dispatchEvent(new Event('app:auth-changed'));
       navigate('/tasks');
     } catch (err) {
-      setError(err.message || '注册失败');
+      setError(err.message || 'Registration failed');
     } finally {
       setLoading(false);
     }

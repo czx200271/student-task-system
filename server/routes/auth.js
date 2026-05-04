@@ -6,27 +6,27 @@ const auth = require('../middleware/auth');
 
 const router = express.Router();
 
-// 注册：POST /api/auth/register
+// Register: POST /api/auth/register
 router.post('/register', async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    // 检查必填字段
+    // Validate required fields
     if (!name || !email || !password) {
       return res.status(400).json({ error: 'Please provide name, email and password' });
     }
 
-    // 检查邮箱是否已存在
+    // Check if email already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ error: 'Email already registered' });
     }
 
-    // 加密密码
+    // Hash password
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
-    // 创建用户
+    // Create user
     const user = new User({
       name,
       email,
@@ -35,7 +35,7 @@ router.post('/register', async (req, res) => {
 
     await user.save();
 
-    // 生成 JWT
+    // Generate JWT
     const token = jwt.sign(
       { userId: user._id },
       process.env.JWT_SECRET,
@@ -56,29 +56,29 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// 登录：POST /api/auth/login
+// Login: POST /api/auth/login
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // 检查必填字段
+    // Validate required fields
     if (!email || !password) {
       return res.status(400).json({ error: 'Please provide email and password' });
     }
 
-    // 查找用户
+    // Find user by email
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ error: 'Invalid email or password' });
     }
 
-    // 验证密码
+    // Verify password
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
       return res.status(400).json({ error: 'Invalid email or password' });
     }
 
-    // 生成 JWT
+    // Generate JWT
     const token = jwt.sign(
       { userId: user._id },
       process.env.JWT_SECRET,
@@ -99,7 +99,7 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// 获取当前用户：GET /api/auth/me
+// Get current user: GET /api/auth/me
 router.get('/me', auth, async (req, res) => {
   try {
     const user = await User.findById(req.userId).select('-passwordHash');

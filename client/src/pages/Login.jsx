@@ -23,7 +23,7 @@ function Login() {
       window.dispatchEvent(new Event('app:auth-changed'));
       navigate('/tasks');
     } catch (err) {
-      setError(err.message || '登录失败');
+      setError(err.message || 'Login failed');
     } finally {
       setLoading(false);
     }
