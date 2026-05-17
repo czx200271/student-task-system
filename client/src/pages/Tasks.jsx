@@ -17,8 +17,14 @@ function formatDateInputValue(date) {
 }
 
 function formatDueDateDisplay(date) {
-  const v = formatDateInputValue(date);
-  return v || 'N/A';
+  if (!date) return 'N/A';
+  const d = new Date(date);
+  if (Number.isNaN(d.getTime())) return 'N/A';
+  return d.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
 }
 
 function Tasks() {
