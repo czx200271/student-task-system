@@ -9,6 +9,29 @@ function isValidObjectId(id) {
   return mongoose.Types.ObjectId.isValid(id);
 }
 
+// GET /api/tasks/stats - get task statistics for dashboard
+router.get('/stats', auth, async (req, res) => {
+  try {
+    const tasks = await Task.find({ userId: req.userId });
+    const now = new Date();
+    
+    const stats = {
+      total: tasks.length,
+      completed: tasks.filter(t => t.status === 'done').length,
+      pending: tasks.filter(t => t.status === 'todo').length,
+      overdue: tasks.filter(t => {
+        if (t.status === 'done') return false;
+        if (!t.dueDate) return false;
+        return new Date(t.dueDate) < now;
+      }).length
+    };
+    
+    res.json({ stats });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // GET /api/tasks - get all tasks for current user
 router.get('/', auth, async (req, res) => {
   try {
