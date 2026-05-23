@@ -25,6 +25,11 @@ const taskSchema = new mongoose.Schema({
     enum: ['low', 'medium', 'high'],
     default: 'medium'
   },
+  subject: {
+    type: String,
+    enum: ['Math', 'English', 'Programming', 'History', 'Science', 'Other'],
+    default: 'Other'
+  },
   status: {
     type: String,
     enum: ['todo', 'done'],

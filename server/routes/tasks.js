@@ -9,21 +9,83 @@ function isValidObjectId(id) {
   return mongoose.Types.ObjectId.isValid(id);
 }
 
-// GET /api/tasks/stats - get task statistics for dashboard
+function startOfDay(date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function endOfDay(date) {
+  const d = new Date(date);
+  d.setHours(23, 59, 59, 999);
+  return d;
+}
+
+// GET /api/tasks/stats - get enhanced task statistics for dashboard
 router.get('/stats', auth, async (req, res) => {
   try {
     const tasks = await Task.find({ userId: req.userId });
     const now = new Date();
+    const today = startOfDay(now);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const endOfTomorrow = endOfDay(tomorrow);
+    const endOfWeek = new Date(today);
+    endOfWeek.setDate(endOfWeek.getDate() + 7);
+
+    const pendingTasks = tasks.filter(t => t.status === 'todo');
+    const completedTasks = tasks.filter(t => t.status === 'done');
     
+    const overdueTasks = pendingTasks.filter(t => {
+      if (!t.dueDate) return false;
+      return new Date(t.dueDate) < today;
+    });
+
+    const todayTasks = pendingTasks.filter(t => {
+      if (!t.dueDate) return false;
+      const due = new Date(t.dueDate);
+      return due >= today && due < tomorrow;
+    });
+
+    const tomorrowTasks = pendingTasks.filter(t => {
+      if (!t.dueDate) return false;
+      const due = new Date(t.dueDate);
+      return due >= tomorrow && due <= endOfTomorrow;
+    });
+
+    const thisWeekTasks = pendingTasks.filter(t => {
+      if (!t.dueDate) return false;
+      const due = new Date(t.dueDate);
+      return due >= today && due <= endOfWeek;
+    });
+
+    const highPriorityPending = pendingTasks.filter(t => t.priority === 'high');
+
+    // Subject distribution
+    const subjectCounts = {};
+    tasks.forEach(t => {
+      const subj = t.subject || 'Other';
+      subjectCounts[subj] = (subjectCounts[subj] || 0) + 1;
+    });
+
+    // Upcoming tasks (next 5 due soon, not overdue)
+    const upcomingTasks = pendingTasks
+      .filter(t => t.dueDate && new Date(t.dueDate) >= today)
+      .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))
+      .slice(0, 5);
+
     const stats = {
       total: tasks.length,
-      completed: tasks.filter(t => t.status === 'done').length,
-      pending: tasks.filter(t => t.status === 'todo').length,
-      overdue: tasks.filter(t => {
-        if (t.status === 'done') return false;
-        if (!t.dueDate) return false;
-        return new Date(t.dueDate) < now;
-      }).length
+      completed: completedTasks.length,
+      pending: pendingTasks.length,
+      overdue: overdueTasks.length,
+      today: todayTasks.length,
+      tomorrow: tomorrowTasks.length,
+      thisWeek: thisWeekTasks.length,
+      highPriority: highPriorityPending.length,
+      completionRate: tasks.length > 0 ? Math.round((completedTasks.length / tasks.length) * 100) : 0,
+      subjectCounts,
+      upcomingTasks
     };
     
     res.json({ stats });
@@ -32,10 +94,39 @@ router.get('/stats', auth, async (req, res) => {
   }
 });
 
-// GET /api/tasks - get all tasks for current user
+// GET /api/tasks - get all tasks with search, filter, sort
 router.get('/', auth, async (req, res) => {
   try {
-    const tasks = await Task.find({ userId: req.userId }).sort({ createdAt: -1 });
+    const { search, subject, sort } = req.query;
+    
+    let query = { userId: req.userId };
+    
+    // Search in title, description, subject
+    if (search) {
+      const searchRegex = new RegExp(search, 'i');
+      query.$or = [
+        { title: searchRegex },
+        { description: searchRegex },
+        { subject: searchRegex }
+      ];
+    }
+    
+    // Filter by subject
+    if (subject && subject !== 'all') {
+      query.subject = subject;
+    }
+    
+    // Build sort options
+    let sortOption = { createdAt: -1 }; // default: newest first
+    if (sort === 'dueDate') {
+      sortOption = { dueDate: 1, createdAt: -1 };
+    } else if (sort === 'priority') {
+      sortOption = { priority: -1, createdAt: -1 };
+    } else if (sort === 'created') {
+      sortOption = { createdAt: -1 };
+    }
+    
+    const tasks = await Task.find(query).sort(sortOption);
     res.json({ tasks });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -45,7 +136,14 @@ router.get('/', auth, async (req, res) => {
 // POST /api/tasks - create a new task
 router.post('/', auth, async (req, res) => {
   try {
-    const { title, description = '', dueDate = null, priority = 'medium', status = 'todo' } = req.body;
+    const { 
+      title, 
+      description = '', 
+      dueDate = null, 
+      priority = 'medium', 
+      subject = 'Other',
+      status = 'todo' 
+    } = req.body;
 
     if (!title || typeof title !== 'string' || !title.trim()) {
       return res.status(400).json({ error: 'Title is required' });
@@ -57,6 +155,7 @@ router.post('/', auth, async (req, res) => {
       description,
       dueDate,
       priority,
+      subject,
       status
     });
 
@@ -84,7 +183,7 @@ router.put('/:id', auth, async (req, res) => {
       return res.status(403).json({ error: 'Forbidden' });
     }
 
-    const allowed = ['title', 'description', 'dueDate', 'priority', 'status'];
+    const allowed = ['title', 'description', 'dueDate', 'priority', 'subject', 'status'];
     for (const key of allowed) {
       if (Object.prototype.hasOwnProperty.call(req.body, key)) {
         task[key] = req.body[key];
@@ -154,4 +253,3 @@ router.patch('/:id/status', auth, async (req, res) => {
 });
 
 module.exports = router;
-
