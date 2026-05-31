@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { apiFetch, getToken } from '../utils/api';
 
@@ -86,7 +86,7 @@ function Tasks() {
 
   const [previewImage, setPreviewImage] = useState(null);
 
-  const loadTasks = async () => {
+  const loadTasks = useCallback(async () => {
     if (!token) return;
     setError('');
     setLoading(true);
@@ -104,7 +104,7 @@ function Tasks() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, searchQuery, subjectFilter, sortBy]);
 
   useEffect(() => {
     const onAuth = () => setToken(getToken());
@@ -113,15 +113,11 @@ function Tasks() {
   }, []);
 
   useEffect(() => {
-    loadTasks();
-  }, [token, subjectFilter, sortBy]);
-
-  useEffect(() => {
     const timer = setTimeout(() => {
       if (token) loadTasks();
     }, 300);
     return () => clearTimeout(timer);
-  }, [searchQuery]);
+  }, [loadTasks, token]);
 
   const toggleStatus = async (task) => {
     try {
@@ -204,7 +200,7 @@ function Tasks() {
         ...p,
         attachments: [...p.attachments, ...newAttachments]
       }));
-    } catch (err) {
+    } catch {
       alert('Failed to upload file');
     } finally {
       setUploading(false);

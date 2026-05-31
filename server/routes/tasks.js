@@ -120,13 +120,19 @@ router.get('/', auth, async (req, res) => {
     let sortOption = { createdAt: -1 }; // default: newest first
     if (sort === 'dueDate') {
       sortOption = { dueDate: 1, createdAt: -1 };
-    } else if (sort === 'priority') {
-      sortOption = { priority: -1, createdAt: -1 };
     } else if (sort === 'created') {
       sortOption = { createdAt: -1 };
     }
     
     const tasks = await Task.find(query).sort(sortOption);
+    if (sort === 'priority') {
+      const priorityRank = { high: 0, medium: 1, low: 2 };
+      tasks.sort((a, b) => {
+        const priorityDiff = priorityRank[a.priority] - priorityRank[b.priority];
+        return priorityDiff || b.createdAt - a.createdAt;
+      });
+    }
+
     res.json({ tasks });
   } catch (error) {
     res.status(500).json({ error: error.message });

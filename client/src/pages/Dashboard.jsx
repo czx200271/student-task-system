@@ -40,7 +40,7 @@ function Dashboard() {
     if (storedUser) {
       try {
         setUser(JSON.parse(storedUser));
-      } catch (e) {
+      } catch {
         // ignore
       }
     }

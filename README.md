@@ -22,7 +22,7 @@ A full-stack web application that helps students manage their tasks efficiently.
 
 | Layer | Technology |
 |-------|------------|
-| Frontend | React 18, Vite, React Router |
+| Frontend | React 19, Vite, React Router |
 | Backend | Node.js, Express.js |
 | Database | MongoDB Atlas |
 | Authentication | JWT (JSON Web Token) |
