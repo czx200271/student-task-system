@@ -142,7 +142,8 @@ router.post('/', auth, async (req, res) => {
       dueDate = null, 
       priority = 'medium', 
       subject = 'Other',
-      status = 'todo' 
+      status = 'todo',
+      attachments = []
     } = req.body;
 
     if (!title || typeof title !== 'string' || !title.trim()) {
@@ -156,7 +157,8 @@ router.post('/', auth, async (req, res) => {
       dueDate,
       priority,
       subject,
-      status
+      status,
+      attachments
     });
 
     await task.save();
@@ -183,7 +185,7 @@ router.put('/:id', auth, async (req, res) => {
       return res.status(403).json({ error: 'Forbidden' });
     }
 
-    const allowed = ['title', 'description', 'dueDate', 'priority', 'subject', 'status'];
+    const allowed = ['title', 'description', 'dueDate', 'priority', 'subject', 'status', 'attachments'];
     for (const key of allowed) {
       if (Object.prototype.hasOwnProperty.call(req.body, key)) {
         task[key] = req.body[key];

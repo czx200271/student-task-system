@@ -35,6 +35,12 @@ const taskSchema = new mongoose.Schema({
     enum: ['todo', 'done'],
     default: 'todo'
   },
+  attachments: [{
+    filename: String,
+    mimetype: String,
+    data: String,
+    uploadedAt: { type: Date, default: Date.now }
+  }],
   createdAt: {
     type: Date,
     default: Date.now

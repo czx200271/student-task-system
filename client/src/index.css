@@ -10,6 +10,13 @@ body {
   min-height: 100vh;
   color: #333;
   line-height: 1.6;
+  transition: background 0.3s ease;
+}
+
+/* Dark Mode Base */
+body.dark-mode {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  color: #e0e0e0;
 }
 
 a {
@@ -32,4 +39,12 @@ a {
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.5);
+}
+
+body.dark-mode ::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+body.dark-mode ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
 }

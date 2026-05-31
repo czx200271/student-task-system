@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { apiFetch, getToken } from '../utils/api';
 
 const SUBJECTS = ['Math', 'English', 'Programming', 'History', 'Science', 'Other'];
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 function isOverdue(dueDate, status) {
   if (status === 'done') return false;
@@ -52,6 +53,15 @@ function getDateGroup(dueDate, status) {
   return 'later';
 }
 
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = (error) => reject(error);
+  });
+}
+
 function Tasks() {
   const [token, setToken] = useState(() => getToken());
   const [tasks, setTasks] = useState([]);
@@ -69,8 +79,12 @@ function Tasks() {
     description: '',
     dueDate: '',
     priority: 'medium',
-    subject: 'Other'
+    subject: 'Other',
+    attachments: []
   });
+  const [uploading, setUploading] = useState(false);
+
+  const [previewImage, setPreviewImage] = useState(null);
 
   const loadTasks = async () => {
     if (!token) return;
@@ -144,7 +158,8 @@ function Tasks() {
       description: '',
       dueDate: '',
       priority: 'medium',
-      subject: 'Other'
+      subject: 'Other',
+      attachments: []
     });
   };
 
@@ -156,13 +171,52 @@ function Tasks() {
       description: task.description || '',
       dueDate: formatDateInputValue(task.dueDate),
       priority: task.priority || 'medium',
-      subject: task.subject || 'Other'
+      subject: task.subject || 'Other',
+      attachments: task.attachments || []
     });
   };
 
   const closeModal = () => {
     setModalMode(null);
     setEditingTask(null);
+  };
+
+  const handleFileUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    setUploading(true);
+    try {
+      const newAttachments = [];
+      for (const file of files) {
+        if (file.size > MAX_FILE_SIZE) {
+          alert(`File "${file.name}" is too large. Max size is 5MB.`);
+          continue;
+        }
+        const data = await fileToBase64(file);
+        newAttachments.push({
+          filename: file.name,
+          mimetype: file.type,
+          data: data
+        });
+      }
+      setEditForm((p) => ({
+        ...p,
+        attachments: [...p.attachments, ...newAttachments]
+      }));
+    } catch (err) {
+      alert('Failed to upload file');
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  const removeAttachment = (index) => {
+    setEditForm((p) => ({
+      ...p,
+      attachments: p.attachments.filter((_, i) => i !== index)
+    }));
   };
 
   const saveTaskModal = async (e) => {
@@ -174,7 +228,8 @@ function Tasks() {
         description: editForm.description,
         dueDate: editForm.dueDate ? new Date(editForm.dueDate).toISOString() : null,
         priority: editForm.priority,
-        subject: editForm.subject
+        subject: editForm.subject,
+        attachments: editForm.attachments
       };
 
       if (modalMode === 'create') {
@@ -202,7 +257,6 @@ function Tasks() {
     }
   };
 
-  // Filter by status
   const filteredTasks = useMemo(() => {
     return tasks.filter(task => {
       if (filter === 'all') return true;
@@ -211,7 +265,6 @@ function Tasks() {
     });
   }, [tasks, filter]);
 
-  // Group tasks by date
   const groupedTasks = useMemo(() => {
     const groups = {
       overdue: [],
@@ -254,6 +307,22 @@ function Tasks() {
         </div>
       </div>
       {task.description && <p className="task-description">{task.description}</p>}
+      
+      {task.attachments && task.attachments.length > 0 && (
+        <div className="task-attachments">
+          {task.attachments.map((att, idx) => (
+            <div key={idx} className="attachment-thumb" onClick={() => setPreviewImage(att.data)}>
+              {att.mimetype.startsWith('image/') ? (
+                <img src={att.data} alt={att.filename} />
+              ) : (
+                <div className="file-icon">📎</div>
+              )}
+              <span className="attachment-name">{att.filename}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      
       <div className="task-footer">
         <span className="due-date">
           {formatDueDateDisplay(task.dueDate)}
@@ -309,7 +378,6 @@ function Tasks() {
     <div className="page-container">
       <h1>My Tasks</h1>
 
-      {/* Toolbar */}
       <div className="tasks-toolbar">
         <div className="tasks-toolbar-left">
           <button type="button" className="btn" onClick={openCreate}>
@@ -323,7 +391,6 @@ function Tasks() {
         </div>
       </div>
 
-      {/* Search and Filters */}
       <div className="tasks-filters">
         <div className="search-box">
           <input
@@ -361,7 +428,6 @@ function Tasks() {
 
       {error && <div className="alert error">{error}</div>}
       
-      {/* Status Filter Buttons */}
       <div className="filter-buttons">
         <button 
           className={filter === 'all' ? 'active' : ''} 
@@ -389,7 +455,6 @@ function Tasks() {
         </button>
       </div>
 
-      {/* Task List */}
       <div className="task-list">
         {loading && <p className="loading-hint">Loading tasks...</p>}
         
@@ -422,7 +487,6 @@ function Tasks() {
         )}
       </div>
 
-      {/* Create / Edit Modal */}
       {modalMode && (
         <div className="modal-backdrop" role="presentation" onClick={closeModal}>
           <div className="modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
@@ -490,6 +554,47 @@ function Tasks() {
                 </div>
               </div>
 
+              <div className="form-group">
+                <label>Attachments</label>
+                <div className="attachment-upload">
+                  <input
+                    type="file"
+                    id="file-upload"
+                    multiple
+                    accept="image/*,.pdf,.doc,.docx,.txt"
+                    onChange={handleFileUpload}
+                    disabled={uploading}
+                    style={{ display: 'none' }}
+                  />
+                  <label htmlFor="file-upload" className="upload-btn">
+                    {uploading ? 'Uploading...' : '📎 Add Files'}
+                  </label>
+                  <span className="upload-hint">Max 5MB per file</span>
+                </div>
+                
+                {editForm.attachments.length > 0 && (
+                  <div className="attachment-list">
+                    {editForm.attachments.map((att, idx) => (
+                      <div key={idx} className="attachment-item">
+                        {att.mimetype.startsWith('image/') ? (
+                          <img src={att.data} alt={att.filename} className="attachment-preview" />
+                        ) : (
+                          <div className="attachment-file-icon">📄</div>
+                        )}
+                        <span className="attachment-filename">{att.filename}</span>
+                        <button 
+                          type="button" 
+                          className="attachment-remove"
+                          onClick={() => removeAttachment(idx)}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={closeModal}>
                   Cancel
@@ -500,6 +605,13 @@ function Tasks() {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {previewImage && (
+        <div className="image-preview-modal" onClick={() => setPreviewImage(null)}>
+          <img src={previewImage} alt="Preview" />
+          <button className="preview-close" onClick={() => setPreviewImage(null)}>×</button>
         </div>
       )}
     </div>

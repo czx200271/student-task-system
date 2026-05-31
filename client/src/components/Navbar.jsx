@@ -5,14 +5,31 @@ function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const [token, setToken] = useState(() => localStorage.getItem('token'));
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('theme');
+    return saved === 'dark';
+  });
 
   useEffect(() => {
     const onAuth = () => setToken(localStorage.getItem('token'));
     window.addEventListener('app:auth-changed', onAuth);
     return () => window.removeEventListener('app:auth-changed', onAuth);
   }, []);
+
+  useEffect(() => {
+    if (darkMode) {
+      document.body.classList.add('dark-mode');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.body.classList.remove('dark-mode');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [darkMode]);
+
+  const toggleTheme = () => {
+    setDarkMode(!darkMode);
+  };
   
-  // Check whether current path is active
   const isActive = (path) => location.pathname === path;
 
   const logout = () => {
@@ -49,6 +66,9 @@ function Navbar() {
             Logout
           </button>
         )}
+        <button type="button" className="theme-toggle" onClick={toggleTheme} title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
+          {darkMode ? '☀️' : '🌙'}
+        </button>
       </div>
     </nav>
   );
