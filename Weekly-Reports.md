@@ -221,9 +221,45 @@
 
 ---
 
+## Post-Project Updates
+
+**Date:** May 31, 2026
+
+### New Features Added
+
+| Feature | Status |
+|---------|--------|
+| Dark/Light Mode Toggle | ✅ Completed |
+| Task Attachments | ✅ Completed |
+| Code Quality Polish | ✅ Completed |
+
+### Feature Details
+
+#### 1. Dark/Light Mode Toggle 🌙☀️
+- Added theme toggle button in navigation bar
+- Click 🌙 to switch to dark mode
+- Click ☀️ to switch to light mode
+- User preference saved in localStorage
+- Full dark mode styling for all components
+
+#### 2. Task Attachments 📎
+- Users can upload files when creating/editing tasks
+- Supports images and documents (max 5MB per file)
+- Attachment thumbnails displayed on task cards
+- Click image to view full-screen preview
+- Easy attachment removal
+
+### Technical Implementation
+- Theme state managed in Navbar component with localStorage persistence
+- Attachments stored as base64 in MongoDB
+- Increased Express body limit to 10MB for file uploads
+- Added comprehensive dark mode CSS styles
+
+---
+
 ## Project Conclusion
 
-The Student Task Management System has been successfully completed over 10 weeks. The application is fully functional and deployed to production. Users can:
+The Student Task Management System has been successfully completed over 10 weeks, with additional features added post-completion. The application is fully functional and deployed to production. Users can:
 
 - Register and login with secure authentication
 - Create, edit, delete, and manage tasks
@@ -232,6 +268,8 @@ The Student Task Management System has been successfully completed over 10 weeks
 - Sort by due date, priority, or creation time
 - View tasks grouped by deadline (Today, Tomorrow, This Week, etc.)
 - Track progress with completion statistics and charts
+- **Switch between dark and light themes**
+- **Attach files and images to tasks**
 
 The project demonstrates full-stack development skills including React, Node.js, Express, MongoDB, JWT authentication, and cloud deployment.
 
